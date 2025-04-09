@@ -42,18 +42,7 @@ def get_price(soup):
         return f"£{price_whole}.{price_fraction}"
     except AttributeError:
         return ""
-
-# Function to extract Product Rating
-def get_rating(soup):
-    try:
-        rating_tag = soup.find("span", class_="aok-offscreen")
-        if rating_tag:
-            text = rating_tag.get_text(strip=True)
-            if "out of" in text:
-                return text.split(" out of")[0]  # Devuelve "4.3" de "4.3 out of 5"
-        return ""
-    except:
-        return ""
+    
 # Function to extract Number of User Reviews
 def get_review_count(soup):
     try:
@@ -103,7 +92,7 @@ if __name__ == '__main__':
         if len(links) > 0:
             links_list = [link.get('href') for link in links]
             
-            d = {"title":[], "price":[], "rating":[], "reviews":[],"availability":[]}
+            d = {"title":[], "price":[], "reviews":[],"availability":[]}
             
             # Loop for extracting product details from each link
             for link in links_list:
@@ -119,7 +108,6 @@ if __name__ == '__main__':
                     
                     d['title'].append(get_title(new_soup))
                     d['price'].append(get_price(new_soup))
-                    d['rating'].append(get_rating(new_soup))
                     d['reviews'].append(get_review_count(new_soup))
                     d['availability'].append(get_availability(new_soup))
                     
