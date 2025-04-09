@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 import requests
 import pandas as pd
 import numpy as np
-
 import socket
 socket.getaddrinfo('localhost', 8080)
 
@@ -38,32 +37,33 @@ def get_title(soup):
 # Function to extract Product Price
 def get_price(soup):
     try:
-        price = soup.find("span", attrs={'id':'priceblock_ourprice'}).string.strip()
+        price_whole = soup.find("span", attrs={"class": "a-price-whole"}).text.replace(",", "").replace(".", "").strip()
+        price_fraction = soup.find("span", attrs={"class": "a-price-fraction"}).text.strip()
+        return f"£{price_whole}.{price_fraction}"
     except AttributeError:
-        try:
-            price = soup.find("span", attrs={'id':'priceblock_dealprice'}).string.strip()
-        except:
-            price = ""
-    return price
+        return ""
 
 # Function to extract Product Rating
 def get_rating(soup):
     try:
-        rating = soup.find("i", attrs={'class':'a-icon a-icon-star a-star-4-5'}).string.strip()
-    except AttributeError:
-        try:
-            rating = soup.find("span", attrs={'class':'a-icon-alt'}).string.strip()
-        except:
-            rating = ""
-    return rating
-
+        rating_tag = soup.find("span", class_="aok-offscreen")
+        if rating_tag:
+            text = rating_tag.get_text(strip=True)
+            if "out of" in text:
+                return text.split(" out of")[0]  # Devuelve "4.3" de "4.3 out of 5"
+        return ""
+    except:
+        return ""
 # Function to extract Number of User Reviews
 def get_review_count(soup):
     try:
-        review_count = soup.find("span", attrs={'id':'acrCustomerReviewText'}).string.strip()
-    except AttributeError:
-        review_count = ""
-    return review_count
+        review_tag = soup.find("span", attrs={'data-hook': 'total-review-count'})
+        if review_tag:
+            count = review_tag.get_text(strip=True).split()[0]
+            return int(count.replace(",", ""))
+        return 0
+    except:
+        return 0
 
 # Function to extract Availability Status
 def get_availability(soup):
@@ -75,10 +75,18 @@ def get_availability(soup):
     return available
 
 if __name__ == '__main__':
-    # New user-agent string
-    HEADERS = ({'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0'})
+    USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Safari/605.1.15',
+    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'
+]
+    # Randomly select a User-Agent from the list
+    HEADERS = {'User-Agent': random.choice(USER_AGENTS)}
 
-    URL = "https://www.amazon.co.uk/s?k=plushies&crid=1WZVBGNE4B497&sprefix=plushies%2Caps%2C106&ref=nb_sb_noss_1"
+
+    URL = "https://www.amazon.co.uk/s?k=gaming&crid=S6IVQEU8HT4P&sprefix=gaming%2Caps%2C93&ref=nb_sb_noss_1"
 
     print("Loading products... Please wait.")  # Display loading message
     
@@ -99,7 +107,13 @@ if __name__ == '__main__':
             
             # Loop for extracting product details from each link
             for link in links_list:
-                new_webpage = retry_request("https://www.amazon.co.uk" + link, HEADERS)
+                print(f"Link being processed: {link[:150]}...")  # Print the link being processed
+                if link.startswith("http"):
+                    url = link
+                else:
+                    url = "https://www.amazon.co.uk" + link
+
+                new_webpage = retry_request(url, HEADERS)
                 if new_webpage:
                     new_soup = BeautifulSoup(new_webpage.content, "html.parser")
                     
