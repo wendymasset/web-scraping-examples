@@ -50,7 +50,7 @@ def scrape_amazon_search_results(search_url, save_path=""):
 
     driver.quit()
 
-    # Now, go to each product URL to extract detailed name and vendor (if needed)
+    # Now, go to each product URL to extract detailed name and vendor
     for entry in data:
         product_url = entry['product_url']
         if product_url != "N/A":
